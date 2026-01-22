@@ -1,5 +1,5 @@
 package com.wora.apistresslab.models.enums;
 
-public enum HttpMethod {
-    GET, PUT, POST, DELETE, PATCH
+public enum ExecutionStatus {
+    PENDING, IN_PROGRESS, COMPLETED, FAILED
 }

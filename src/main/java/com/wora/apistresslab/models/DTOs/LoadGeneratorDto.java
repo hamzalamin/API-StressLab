@@ -1,4 +1,17 @@
 package com.wora.apistresslab.models.DTOs;
 
-public record LoadGeneratorDto() {
+import com.wora.apistresslab.models.enums.ExecutionStatus;
+import com.wora.apistresslab.models.enums.HttpMethod;
+
+import java.time.LocalDateTime;
+
+public record LoadGeneratorDto(
+        Long id,
+        String url,
+        Integer RequestNumber,
+        HttpMethod httpMethod,
+        ExecutionStatus executionStatus,
+        LocalDateTime createdAt,
+        LocalDateTime executedAt
+) {
 }
