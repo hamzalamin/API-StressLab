@@ -1,0 +1,28 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: api-stress-lab
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/api_stress_lab
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+    depends_on:
+      - db
+
+  db:
+    image: postgres:alpine
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_DB: api_stress_lab
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+
+
+volumes:
+  pgdata:
