@@ -1,7 +1,7 @@
 package com.wora.apistresslab.models.DTOs;
 
 import com.wora.apistresslab.models.enums.ExecutionStatus;
-import com.wora.apistresslab.models.enums.HttpMethod;
+import org.springframework.http.HttpMethod;
 
 
 public record CreateLoadGeneratorDto(

@@ -2,12 +2,12 @@ package com.wora.apistresslab.models.entities;
 
 
 import com.wora.apistresslab.models.enums.ExecutionStatus;
-import com.wora.apistresslab.models.enums.HttpMethod;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import jakarta.validation.constraints.NotBlank;
+import org.springframework.http.HttpMethod;
 
 import java.time.LocalDateTime;
 
@@ -34,7 +34,6 @@ public class LoadGenerator {
     private Integer requestNumber;
 
     @NotNull
-    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private HttpMethod httpMethod;
 
