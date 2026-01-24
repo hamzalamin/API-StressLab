@@ -2,8 +2,9 @@ spring:
   application:
     name: API-stress-lab
   datasource:
-    url: jdbc:postgresql://localhost:5432/api_stress_lab
+    url: jdbc:postgresql://db:5432/api_stress_lab
     username: postgres
+    password: postgres
 
   jpa:
     generate-ddl: true
