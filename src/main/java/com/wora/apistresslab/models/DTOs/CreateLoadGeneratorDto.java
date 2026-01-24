@@ -6,7 +6,7 @@ import org.springframework.http.HttpMethod;
 
 public record CreateLoadGeneratorDto(
         String url,
-        Integer RequestNumber,
+        Integer requestNumber,
         HttpMethod httpMethod,
         ExecutionStatus executionStatus
 ) {

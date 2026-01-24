@@ -4,10 +4,16 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: api-stress-lab
+    network_mode: "host"
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/api_stress_lab
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/api_stress_lab
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=postgres
+    ports:
+      - "8080:8080"
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     depends_on:
       - db
 

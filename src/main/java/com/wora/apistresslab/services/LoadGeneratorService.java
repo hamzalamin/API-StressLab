@@ -24,7 +24,7 @@ public class LoadGeneratorService implements ILoadGeneratorService {
     @Override
     public LoadTestResultDto executeLoadTest(CreateLoadGeneratorDto createLoadGeneratorDto) {
         String url = createLoadGeneratorDto.url();
-        Integer requestNumber = createLoadGeneratorDto.RequestNumber();
+        Integer requestNumber = createLoadGeneratorDto.requestNumber();
         HttpMethod httpMethod = createLoadGeneratorDto.httpMethod();
 
         int successCount = 0;
@@ -49,7 +49,7 @@ public class LoadGeneratorService implements ILoadGeneratorService {
                 int statusCode = response.getStatusCode().value();
                 statusCodeDistribution.put(statusCode, statusCodeDistribution.getOrDefault(statusCode, 0) + 1);
 
-                if (statusCode >= 200 && statusCode <= 300) {
+                if (statusCode >= 200 && statusCode < 300) {
                     successCount++;
                 } else {
                     failCount++;
@@ -93,7 +93,7 @@ public class LoadGeneratorService implements ILoadGeneratorService {
         );
     }
 
-    private ResponseEntity<String> makeHttpRequest(String url, org.springframework.http.HttpMethod httpMethod) {
+    private ResponseEntity<String> makeHttpRequest(String url, HttpMethod httpMethod) {
         HttpHeaders header = new HttpHeaders();
         HttpEntity<String> entity = new HttpEntity<>(null, header);
 

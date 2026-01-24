@@ -38,7 +38,7 @@ public class LoadGeneratorMapper implements Mapper<LoadGenerator, LoadGeneratorD
         return LoadGenerator.builder()
                 .id(dto.id())
                 .url(dto.url())
-                .requestNumber(dto.RequestNumber())
+                .requestNumber(dto.requestNumber())
                 .httpMethod(dto.httpMethod())
                 .executionStatus(dto.executionStatus())
                 .createdAt(dto.createdAt())
@@ -54,7 +54,7 @@ public class LoadGeneratorMapper implements Mapper<LoadGenerator, LoadGeneratorD
 
         return LoadGenerator.builder()
                 .url(dto.url())
-                .requestNumber(dto.RequestNumber())
+                .requestNumber(dto.requestNumber())
                 .httpMethod(dto.httpMethod())
                 .executionStatus(ExecutionStatus.PENDING)
                 .build();

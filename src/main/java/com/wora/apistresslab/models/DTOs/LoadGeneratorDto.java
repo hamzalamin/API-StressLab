@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 public record LoadGeneratorDto(
         Long id,
         String url,
-        Integer RequestNumber,
+        Integer requestNumber,
         HttpMethod httpMethod,
         ExecutionStatus executionStatus,
         LocalDateTime createdAt,
