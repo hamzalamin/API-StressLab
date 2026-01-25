@@ -5,4 +5,6 @@ import com.wora.apistresslab.models.DTOs.LoadTestResultDto;
 
 public interface ILoadGeneratorService {
     public LoadTestResultDto executeLoadTest(CreateLoadGeneratorDto createLoadGeneratorDto);
+
+    public LoadTestResultDto executeConcurrentLoadTest(CreateLoadGeneratorDto createLoadGeneratorDto);
 }

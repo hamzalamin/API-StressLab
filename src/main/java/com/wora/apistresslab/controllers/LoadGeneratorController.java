@@ -25,5 +25,10 @@ public class LoadGeneratorController {
         return new ResponseEntity<>(service.executeLoadTest(dto), HttpStatus.OK);
     }
 
+    @PostMapping("/load-parallel-test")
+    public ResponseEntity<LoadTestResultDto> executeConcurrentTestResult(@RequestBody @Valid CreateLoadGeneratorDto dto) {
+        return new ResponseEntity<>(service.executeConcurrentLoadTest(dto), HttpStatus.OK);
+    }
+
 
 }
