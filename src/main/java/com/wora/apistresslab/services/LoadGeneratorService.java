@@ -2,6 +2,7 @@ package com.wora.apistresslab.services;
 
 import com.wora.apistresslab.models.DTOs.CreateLoadGeneratorDto;
 import com.wora.apistresslab.models.DTOs.LoadTestResultDto;
+import com.wora.apistresslab.models.DTOs.LoadTestStatistics;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -77,29 +78,25 @@ public class LoadGeneratorService implements ILoadGeneratorService {
 
         }
 
-        Long testEndTime = System.currentTimeMillis();
-        Long totalDuration = testEndTime - testStartTime;
-        Long averageTimeResponse = calculateAverage(responseTimes);
-        Long minResponseTime = responseTimes.isEmpty() ? 0L : Collections.min(responseTimes);
-        Long maxResponseTime = responseTimes.isEmpty() ? 0L : Collections.max(responseTimes);
-        Double requestDurationPerSec = calculateRequestsPerSec(Long.valueOf(requestNumber), totalDuration);
-        List<String> duplicatedErrs = deDuplicateErrs(errors);
+        computeLoadTestStatistics(testStartTime, responseTimes, requestNumber, errors);
 
         LOG.info("fail count : {}", failCount);
+
+        LoadTestStatistics stats =
+                computeLoadTestStatistics(testStartTime, responseTimes, requestNumber, errors);
 
         return new LoadTestResultDto(
                 requestNumber,
                 successCount,
-                averageTimeResponse,
-                minResponseTime,
-                maxResponseTime,
-                requestDurationPerSec,
+                stats.averageResponseTime(),
+                stats.minResponseTime(),
+                stats.maxResponseTime(),
+                stats.requestsPerSecond(),
                 statusCodeDistribution,
-                duplicatedErrs,
+                stats.deduplicatedErrors(),
                 LocalDateTime.now()
         );
     }
-
 
     @Override
     public LoadTestResultDto executeConcurrentLoadTest(CreateLoadGeneratorDto createLoadGeneratorDto) {
@@ -122,86 +119,37 @@ public class LoadGeneratorService implements ILoadGeneratorService {
 
             for (int i = 0; i < requestNumber; i++) {
                 Future<Void> future = executorService.submit(() -> {
-                    try {
-                        Long startRequestTime = System.currentTimeMillis();
-                        ResponseEntity<String> response = makeHttpRequest(url, httpMethod);
-                        Long endRequestTime = System.currentTimeMillis();
-
-                        Long responseTime = endRequestTime - startRequestTime;
-                        responseTimes.add(responseTime);
-
-                        int statusCode = response.getStatusCode().value();
-                        statusCodeDistribution.merge(statusCode, 1, Integer::sum);
-
-                        if (statusCode >= 200 && statusCode < 300) {
-                            successCount.incrementAndGet();
-                        } else {
-                            failCount.incrementAndGet();
-                        }
-
-                    } catch (HttpClientErrorException e) {
-                        failCount.incrementAndGet();
-                        int statusCode = e.getStatusCode().value();
-                        statusCodeDistribution.merge(statusCode, 1, Integer::sum);
-                        errors.add("HTTP " + statusCode + " : " + e.getMessage());
-                    } catch (ResourceAccessException e) {
-                        failCount.incrementAndGet();
-                        errors.add("Network err : " + e.getMessage());
-                    } catch (Exception e) {
-                        failCount.incrementAndGet();
-                        errors.add("Unexpected exception : " + e.getMessage());
-                    }
+                    executeRequestAndUpdateStatistics(url, httpMethod, responseTimes, statusCodeDistribution, successCount, failCount, errors);
                     return null;
                 });
 
                 futures.add(future);
             }
 
-            for (Future<Void> future : futures) {
-                try {
-                    future.get();
-                } catch (ExecutionException | InterruptedException e) {
-                    LOG.error("execution err : {}", e.getMessage());
-                    errors.add("Thread execution err : " + e.getMessage());
-                }
-            }
+            waitForFuturesCompletion(futures, errors);
+            shutdownExecutorService(executorService);
 
-            executorService.shutdown();
-            try {
-                if (!executorService.awaitTermination(60, TimeUnit.SECONDS)) {
-                    executorService.shutdownNow();
-                }
-            } catch (InterruptedException e) {
-                executorService.shutdownNow();
-                Thread.currentThread().interrupt();
-            }
         } catch (Exception e) {
             LOG.error("execution exception : {}", e.getMessage());
         }
 
-        Long testEndTime = System.currentTimeMillis();
-        Long totalDuration = testEndTime - testStartTime;
+        computeLoadTestStatistics(testStartTime, responseTimes, requestNumber, errors);
 
-        Long averageResponseTime = calculateAverage(responseTimes);
-        Long minResponseTime = responseTimes.isEmpty() ? 0L : Collections.min(responseTimes);
-        Long maxResponseTime = responseTimes.isEmpty() ? 0L : Collections.max(responseTimes);
-        Double requestsPerSecond = calculateRequestsPerSec(Long.valueOf(requestNumber), totalDuration);
-
-        List<String> deduplicatedErrors = deDuplicateErrs(errors);
+        LoadTestStatistics stats =
+                computeLoadTestStatistics(testStartTime, responseTimes, requestNumber, errors);
 
         return new LoadTestResultDto(
                 requestNumber,
                 successCount.get(),
-                averageResponseTime,
-                minResponseTime,
-                maxResponseTime,
-                requestsPerSecond,
+                stats.averageResponseTime(),
+                stats.minResponseTime(),
+                stats.maxResponseTime(),
+                stats.requestsPerSecond(),
                 statusCodeDistribution,
-                deduplicatedErrors,
+                stats.deduplicatedErrors(),
                 LocalDateTime.now()
         );
     }
-
 
     private ResponseEntity<String> makeHttpRequest(String url, HttpMethod httpMethod) {
         HttpHeaders header = new HttpHeaders();
@@ -245,5 +193,92 @@ public class LoadGeneratorService implements ILoadGeneratorService {
         return duplicateErrs;
     }
 
+    private void executeRequestAndUpdateStatistics(
+            String url, HttpMethod httpMethod, List<Long> responseTimes, Map<Integer, Integer> statusCodeDistribution, AtomicInteger successCount,
+            AtomicInteger failCount, List<String> errors
+    ){
+        try {
+            Long startRequestTime = System.currentTimeMillis();
+            ResponseEntity<String> response = makeHttpRequest(url, httpMethod);
+            Long endRequestTime = System.currentTimeMillis();
+
+            Long responseTime = endRequestTime - startRequestTime;
+            responseTimes.add(responseTime);
+
+            int statusCode = response.getStatusCode().value();
+            statusCodeDistribution.merge(statusCode, 1, Integer::sum);
+
+            if (statusCode >= 200 && statusCode < 300) {
+                successCount.incrementAndGet();
+            } else {
+                failCount.incrementAndGet();
+            }
+
+        } catch (HttpClientErrorException e) {
+            failCount.incrementAndGet();
+            int statusCode = e.getStatusCode().value();
+            statusCodeDistribution.merge(statusCode, 1, Integer::sum);
+            errors.add("HTTP " + statusCode + " : " + e.getMessage());
+        } catch (ResourceAccessException e) {
+            failCount.incrementAndGet();
+            errors.add("Network err : " + e.getMessage());
+        } catch (Exception e) {
+            failCount.incrementAndGet();
+            errors.add("Unexpected exception : " + e.getMessage());
+        }
+    }
+
+    private LoadTestStatistics computeLoadTestStatistics(
+            Long testStartTime,
+            List<Long> responseTimes,
+            Integer requestNumber,
+            List<String> errors
+    ) {
+        Long testEndTime = System.currentTimeMillis();
+        Long totalDuration = testEndTime - testStartTime;
+
+        Long averageResponseTime = calculateAverage(responseTimes);
+        Long minResponseTime = responseTimes.isEmpty() ? 0L : Collections.min(responseTimes);
+        Long maxResponseTime = responseTimes.isEmpty() ? 0L : Collections.max(responseTimes);
+        Double requestsPerSecond = calculateRequestsPerSec(requestNumber.longValue(), totalDuration);
+
+        List<String> deduplicatedErrors = deDuplicateErrs(errors);
+
+        return new LoadTestStatistics(
+                averageResponseTime,
+                minResponseTime,
+                maxResponseTime,
+                requestsPerSecond,
+                deduplicatedErrors
+        );
+    }
+
+    private void waitForFuturesCompletion(List<Future<Void>> futures, List<String> errors) {
+        for (Future<Void> future : futures) {
+            try {
+                future.get();
+            } catch (InterruptedException e) {
+                LOG.error("Thread interrupted while waiting for task completion", e);
+                errors.add("Thread interrupted : " + e.getMessage());
+                Thread.currentThread().interrupt();
+                return;
+            } catch (ExecutionException e) {
+                LOG.error("Task execution failed", e);
+                errors.add("Thread execution err : " + e.getCause().getMessage());
+            }
+        }
+    }
+
+    private void shutdownExecutorService(ExecutorService executorService) {
+        executorService.shutdown();
+        try {
+            if (!executorService.awaitTermination(60, TimeUnit.SECONDS)) {
+                executorService.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            executorService.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
+    }
 
 }
