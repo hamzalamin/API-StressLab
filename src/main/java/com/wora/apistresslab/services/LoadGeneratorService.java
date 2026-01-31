@@ -78,12 +78,8 @@ public class LoadGeneratorService implements ILoadGeneratorService {
 
         }
 
-        computeLoadTestStatistics(testStartTime, responseTimes, requestNumber, errors);
-
+        LoadTestStatistics stats = computeLoadTestStatistics(testStartTime, responseTimes, requestNumber, errors);
         LOG.info("fail count : {}", failCount);
-
-        LoadTestStatistics stats =
-                computeLoadTestStatistics(testStartTime, responseTimes, requestNumber, errors);
 
         return new LoadTestResultDto(
                 requestNumber,
@@ -112,8 +108,8 @@ public class LoadGeneratorService implements ILoadGeneratorService {
         Map<Integer, Integer> statusCodeDistribution = new ConcurrentHashMap<>();
 
         Long testStartTime = System.currentTimeMillis();
-
-        try (ExecutorService executorService = Executors.newFixedThreadPool(requestNumber)) {
+        ExecutorService executorService = Executors.newFixedThreadPool(requestNumber);
+        try {
 
             List<Future<Void>> futures = new ArrayList<>();
 
@@ -127,16 +123,13 @@ public class LoadGeneratorService implements ILoadGeneratorService {
             }
 
             waitForFuturesCompletion(futures, errors);
-            shutdownExecutorService(executorService);
-
         } catch (Exception e) {
             LOG.error("execution exception : {}", e.getMessage());
+        } finally {
+            shutdownExecutorService(executorService);
         }
 
-        computeLoadTestStatistics(testStartTime, responseTimes, requestNumber, errors);
-
-        LoadTestStatistics stats =
-                computeLoadTestStatistics(testStartTime, responseTimes, requestNumber, errors);
+        LoadTestStatistics stats = computeLoadTestStatistics(testStartTime, responseTimes, requestNumber, errors);
 
         return new LoadTestResultDto(
                 requestNumber,
@@ -150,6 +143,8 @@ public class LoadGeneratorService implements ILoadGeneratorService {
                 LocalDateTime.now()
         );
     }
+
+    
 
     private ResponseEntity<String> makeHttpRequest(String url, HttpMethod httpMethod) {
         HttpHeaders header = new HttpHeaders();
