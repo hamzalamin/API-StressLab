@@ -5,7 +5,6 @@ import com.wora.apistresslab.models.DTOs.CreateLoadGeneratorDto;
 import com.wora.apistresslab.models.DTOs.LoadTestResultDto;
 import com.wora.apistresslab.models.DTOs.LoadTestStatistics;
 import lombok.RequiredArgsConstructor;
-import org.apache.catalina.Executor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpEntity;
@@ -110,7 +109,8 @@ public class LoadGeneratorService implements ILoadGeneratorService {
         Map<Integer, Integer> statusCodeDistribution = new ConcurrentHashMap<>();
 
         Long testStartTime = System.currentTimeMillis();
-        ExecutorService executorService = Executors.newFixedThreadPool(requestNumber);
+        int threadPoolSize = Math.min(requestNumber, 500);
+        ExecutorService executorService = Executors.newFixedThreadPool(threadPoolSize);
         try {
 
             List<Future<Void>> futures = new ArrayList<>();
@@ -165,7 +165,7 @@ public class LoadGeneratorService implements ILoadGeneratorService {
         ExecutorService executorService = Executors.newFixedThreadPool(maxThreads);
 
         long testStartTime = System.currentTimeMillis();
-        long testEndTime = testStartTime * (durationSeconds / 1000L);
+        long testEndTime = testStartTime + (durationSeconds * 1000L);
 
         try {
             List<Future<Void>> futures = new ArrayList<>();
