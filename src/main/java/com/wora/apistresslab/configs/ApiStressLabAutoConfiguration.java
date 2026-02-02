@@ -6,7 +6,7 @@ import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.RestTemplate;
 
 @Configuration
-public class AppConfig {
+public class ApiStressLabAutoConfiguration {
 
     @Bean
     public RestTemplate restTemplate() {

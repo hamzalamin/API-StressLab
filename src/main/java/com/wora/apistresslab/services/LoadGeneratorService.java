@@ -1,9 +1,11 @@
 package com.wora.apistresslab.services;
 
+import com.wora.apistresslab.models.DTOs.CreateDurationBasedLoadTestDto;
 import com.wora.apistresslab.models.DTOs.CreateLoadGeneratorDto;
 import com.wora.apistresslab.models.DTOs.LoadTestResultDto;
 import com.wora.apistresslab.models.DTOs.LoadTestStatistics;
 import lombok.RequiredArgsConstructor;
+import org.apache.catalina.Executor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpEntity;
@@ -144,7 +146,67 @@ public class LoadGeneratorService implements ILoadGeneratorService {
         );
     }
 
-    
+
+
+    @Override
+    public LoadTestResultDto executeDurationBasedLoadTest(CreateDurationBasedLoadTestDto createDurationBasedLoadTestDto) {
+        String url = createDurationBasedLoadTestDto.url();
+        HttpMethod httpMethod = createDurationBasedLoadTestDto.httpMethod();
+        int maxThreads = createDurationBasedLoadTestDto.MaxConcurrentThread();
+        int durationSeconds = createDurationBasedLoadTestDto.durationSeconds();
+
+        AtomicInteger successCount = new AtomicInteger(0);
+        AtomicInteger failCount = new AtomicInteger(0);
+
+        List<Long> responseTimes = Collections.synchronizedList(new ArrayList<>());
+        List<String> errors = Collections.synchronizedList(new ArrayList<>());
+        Map<Integer, Integer> statusCodeDistribution = new ConcurrentHashMap<>();
+
+        ExecutorService executorService = Executors.newFixedThreadPool(maxThreads);
+
+        long testStartTime = System.currentTimeMillis();
+        long testEndTime = testStartTime * (durationSeconds / 1000L);
+
+        try {
+            List<Future<Void>> futures = new ArrayList<>();
+
+            for (int i = 0; i < maxThreads; i++) {
+                futures.add(executorService.submit(() -> {
+                    while (System.currentTimeMillis() < testEndTime) {
+                        executeRequestAndUpdateStatistics(url, httpMethod, responseTimes, statusCodeDistribution, successCount, failCount, errors);
+                    }
+                    return null;
+                }));
+            }
+            waitForFuturesCompletion(futures, errors);
+        } finally {
+            shutdownExecutorService(executorService);
+        }
+
+        int totalRequests = successCount.get() + failCount.get();
+        LoadTestStatistics stats = computeLoadTestStatistics(
+                testStartTime,
+                responseTimes,
+                totalRequests,
+                errors
+        );
+
+        return new LoadTestResultDto(
+                totalRequests,
+                successCount.get(),
+                stats.averageResponseTime(),
+                stats.minResponseTime(),
+                stats.maxResponseTime(),
+                stats.requestsPerSecond(),
+                statusCodeDistribution,
+                stats.deduplicatedErrors(),
+                LocalDateTime.now()
+        );
+    }
+
+
+
+
 
     private ResponseEntity<String> makeHttpRequest(String url, HttpMethod httpMethod) {
         HttpHeaders header = new HttpHeaders();
