@@ -23,5 +23,6 @@ public class ApiStressLabProperties {
     private boolean enableRetry = false;
     private int maxRetries = 3;
     private boolean followRedirects = true;
+    private int readTimeout = 10000;
 
 }

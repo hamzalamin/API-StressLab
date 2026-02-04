@@ -1,21 +1,33 @@
 package com.wora.apistresslab.configs;
 
+import com.wora.apistresslab.services.ILoadGeneratorService;
+import com.wora.apistresslab.services.LoadGeneratorService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.RestTemplate;
 
-@Configuration
+@AutoConfiguration
 @EnableConfigurationProperties(ApiStressLabProperties.class)
 public class ApiStressLabAutoConfiguration {
 
     @Bean
-    public RestTemplate restTemplate() {
+    @ConditionalOnMissingBean
+    public RestTemplate apiStressLabRestTemplate(ApiStressLabProperties properties) {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-        factory.setConnectTimeout(5000);
-        factory.setReadTimeout(10000);
-
+        factory.setConnectTimeout(properties.getConnectTimeoutMs());
+        factory.setReadTimeout(properties.getReadTimeout());
         return new RestTemplate(factory);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(ILoadGeneratorService.class)
+    public ILoadGeneratorService loadGeneratorService(
+            RestTemplate apiStressLabRestTemplate
+    ) {
+        return new LoadGeneratorService(apiStressLabRestTemplate);
     }
 }

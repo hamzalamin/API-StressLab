@@ -5,27 +5,33 @@ import com.wora.apistresslab.annotations.LoadTest;
 import com.wora.apistresslab.models.DTOs.CreateDurationBasedLoadTestDto;
 import com.wora.apistresslab.models.DTOs.CreateLoadGeneratorDto;
 import com.wora.apistresslab.models.DTOs.LoadTestResultDto;
-import com.wora.apistresslab.services.LoadGeneratorService;
-import org.junit.jupiter.api.extension.*;
+import com.wora.apistresslab.services.ILoadGeneratorService;
+import org.junit.jupiter.api.extension.BeforeEachCallback;
+import org.junit.jupiter.api.extension.ExtensionContext;
+import org.junit.jupiter.api.extension.ParameterContext;
+import org.junit.jupiter.api.extension.ParameterResolver;
 import org.springframework.http.HttpMethod;
+import org.springframework.context.ApplicationContext;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
+
 
 public class LoadTestExtension
-        implements BeforeTestExecutionCallback, ParameterResolver {
+        implements BeforeEachCallback, ParameterResolver {
 
     private static final ExtensionContext.Namespace NAMESPACE =
             ExtensionContext.Namespace.create(LoadTestExtension.class);
 
     @Override
-    public void beforeTestExecution(ExtensionContext context) {
+    public void beforeEach(ExtensionContext context) {
+
+        ApplicationContext springContext =
+                SpringExtension.getApplicationContext(context);
 
         LoadTest cfg = context.getRequiredTestMethod()
                 .getAnnotation(LoadTest.class);
 
-        LoadGeneratorService service =
-                SpringContext.getBean(LoadGeneratorService.class);
-
-        HttpMethod httpMethod =
-                HttpMethod.valueOf(cfg.method().name());
+        ILoadGeneratorService service =
+                springContext.getBean(ILoadGeneratorService.class);
 
         LoadTestResultDto result;
 
@@ -33,7 +39,7 @@ public class LoadTestExtension
             result = service.executeDurationBasedLoadTest(
                     new CreateDurationBasedLoadTestDto(
                             cfg.url(),
-                            httpMethod,
+                            HttpMethod.valueOf(cfg.method().name()),
                             cfg.threads(),
                             cfg.duration(),
                             null
@@ -44,7 +50,7 @@ public class LoadTestExtension
                     new CreateLoadGeneratorDto(
                             cfg.url(),
                             cfg.requests(),
-                            httpMethod,
+                            HttpMethod.valueOf(cfg.method().name()),
                             ExecutionStatus.PENDING
                     )
             );
@@ -57,8 +63,7 @@ public class LoadTestExtension
     public boolean supportsParameter(
             ParameterContext pc, ExtensionContext ec) {
 
-        return pc.getParameter()
-                .getType()
+        return pc.getParameter().getType()
                 .equals(LoadTestResultDto.class);
     }
 
