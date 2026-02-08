@@ -35,7 +35,11 @@ public class LoadTestExtension
 
         LoadTestResultDto result;
 
-        if (cfg.duration() > 0) {
+        if (cfg == null) {
+            throw new IllegalStateException(
+                    "@LoadTest is missing on test method"
+            );
+        } else if (cfg.duration() > 0) {
             result = service.executeDurationBasedLoadTest(
                     new CreateDurationBasedLoadTestDto(
                             cfg.url(),

@@ -2,7 +2,6 @@ package com.wora.apistresslab.configs;
 
 import com.wora.apistresslab.services.ILoadGeneratorService;
 import com.wora.apistresslab.services.LoadGeneratorService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;

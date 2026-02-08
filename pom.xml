@@ -16,7 +16,7 @@
 
     <properties>
         <java.version>17</java.version>
-        <spring.boot.version>4.0.1</spring.boot.version>
+        <spring.boot.version>3.2.0</spring.boot.version>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <lombok.version>1.18.30</lombok.version>
@@ -75,16 +75,18 @@
             <artifactId>slf4j-api</artifactId>
         </dependency>
 
+        <!-- JUnit 5 for testing extensions -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
             <scope>compile</scope>
         </dependency>
 
+        <!-- Spring Test support -->
         <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-test</artifactId>
-            <optional>true</optional>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>compile</scope>
         </dependency>
     </dependencies>
 
