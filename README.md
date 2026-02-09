@@ -22,4 +22,4 @@ class ApiTests {}
 ```
 
 More details and usage examples:  
-👉 https://api-stress-lab.vercel.app
+👉 https://
